@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Froxa with your App</title>
+    <style>
+        #log {
+            margin-top: 20px;
+        }
+        .msg {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .msg-sent {
+            background-color: #e6f7ff;
+            border-color: #91d5ff;
+        }
+        .msg-received {
+            background-color: #f6ffed;
+            border-color: #b7eb8f;
+        }
+    </style>
+</head>
+<body>
+    <h3>Froxa with your App | Command Execution with Froxa</h3>
+
+    <input type="text" id="messageInput" placeholder='Type Here, Examp {"command":"notification"}' >
+    <button id="sendButton">Send Command</button>
+    <button id="notifyTestButton">(Example Command) Notify Test</button>
+
+    <div id="log">
+        <h4>Log</h4>
+        <div id="receivedMessages"></div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const notifyTestButton = document.getElementById('notifyTestButton');
+        const receivedMessagesDiv = document.getElementById('receivedMessages');
+
+        sendButton.addEventListener('click', () => {
+            const messageText = messageInput.value;
+            if (!messageText) {
+                alert('Enter Message');
+                return;
+            }
+            window.parent.postMessage(messageText, '*');
+            logMessage(`Sent\n${messageText}`, 'sent');
+            messageInput.value = '';
+        });
+
+        notifyTestButton.addEventListener('click', () => {
+            const testJson = {
+                command: "notification", // command type | this command is used to send notifications. | if you are going to execute another Froxa command outside the notification, write it and adjust the JSON content accordingly.
+                appName: "Froxa Notify Test", // the name of the application that sent the notification
+                notifyIcon: "https://cdn-icons-png.flaticon.com/512/1828/1828817.png", // notification icon
+                notifyTitle: "Notification Test", // notification title
+                notifyContent: "Example Test Message!", // notification content
+				notifyButton1Text: "Ok", // only if notifyType = control | Changes the Confirmation button text
+				notifyButton2Text: "Cancel", // only if notifyType = control | Changes the Cancel button text
+                bgColor: "#f0f0f0", // it works if the user does not use customization
+                titleColor: "#1a1a1a", // it works if the user does not use customization
+                contentColor: "#333333", // it works if the user does not use customization
+                appColor: "#007bff", // it works if the user does not use customization
+                iconRadius: "8px", // if the app icon is square, you can adjust it to make it round (optional)
+                timeoutSecond: 5, // notification display time | Froxa does not accept very high numbers
+                notifyInteraction: true // if true "control" if false "normal"
+            };
+            const messageString = JSON.stringify(testJson);
+            window.parent.postMessage(messageString, '*');
+            logMessage(`Sent\n${messageString}`, 'sent');
+        });
+
+        messageInput.addEventListener('keyup', function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendButton.click();
+            }
+        });
+
+        window.addEventListener('message', (event) => {
+            let receivedData = event.data;
+            let formattedMessage = receivedData;
+            try {
+                const parsedJSON = JSON.parse(receivedData);
+                formattedMessage = JSON.stringify(parsedJSON, null, 2);
+            } catch (e) {
+
+            }
+            logMessage(`Response\n${formattedMessage}`, 'received');
+        });
+
+        function logMessage(text, type) {
+            const p = document.createElement('pre');
+            p.textContent = text;
+            p.className = 'msg';
+            if (type === 'sent') {
+                p.classList.add('msg-sent');
+            } else if (type === 'received') {
+                p.classList.add('msg-received');
+            }
+            receivedMessagesDiv.prepend(p);
+        }
+    </script>
+</body>
+</html>
