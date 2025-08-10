@@ -1,0 +1,1277 @@
+function setStyles(el, styles) {
+  Object.assign(el.style, styles);
+}
+
+class FroxaOS {
+  constructor(container, bootOptions) {
+    this.container = container;
+    this.bootOptions = bootOptions;
+    this.db = bootOptions.db; 
+    this.crypto = bootOptions.crypto; 
+
+    this.userData = bootOptions.userData || {};
+    this.decryptionKey = bootOptions.decryptionKey; 
+
+    this.WindowManager = new FroxaOS.WindowManager(this);
+    this.NotificationManager = new FroxaOS.NotificationManager(this);
+    this.AccountManager = new FroxaOS.AccountManager(this);
+    this.UIManager = new FroxaOS.UIManager(this);
+    this.TaskManager = new FroxaOS.TaskManager(this);
+
+    this.addCoreStyles();
+  }
+
+  async init() {
+    console.log("FroxaOS çekirdeği başlatılıyor...");
+    await this.AccountManager.loadSession(); 
+    this.UIManager.setupDesktop();
+    this.UIManager.setupTaskbar();
+    this.UIManager.renderBackground();
+    this.TaskManager.startClock(); 
+    console.log("FroxaOS başlatıldı!");
+
+    this.WindowManager.openWindow({
+      NAME: "Welcome",
+      URL: "https://www.google.com/search?q=welcome+to+froxaos", 
+      TITLE_COLOR: "#ffffff",
+      BAR_COLOR: "#3498db",
+      WIDTH: 600,
+      HEIGHT: 400,
+      BG_COLOR: "#ffffff",
+    });
+
+    this.NotificationManager.showNotification({
+      ICON_URL: "https://xmeroriginals.github.io/froxa/favicon.ico",
+      APP_NAME: "FroxaOS System",
+      TITLE: "Hoş Geldiniz!",
+      CONTENT: "FroxaOS'a hoş geldiniz. Keyifli kullanımlar dileriz.",
+      BG_COLOR: "#4CAF50",
+      TITLE_COLOR: "#ffffff",
+      CONTENT_COLOR: "#e0e0e0",
+      APP_COLOR: "#ffffff",
+      ICON_RADIUS: 8,
+      TIMEOUT: 7,
+    });
+  }
+
+  addCoreStyles() {
+    const styleTag = document.createElement("style");
+    styleTag.textContent = `
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f0f0;
+      }
+      #main-os-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      #desktop-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #34495e; 
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+      }
+
+      #taskbar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 48px;
+        background-color: rgba(44, 62, 80, 0.9); 
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        box-sizing: border-box;
+        z-index: 99999; 
+        color: white;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+      }
+
+      #taskbar-start-button {
+        background-color: #2ecc71; 
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        margin-right: 15px;
+        transition: background-color 0.2s ease;
+      }
+      #taskbar-start-button:hover {
+        background-color: #27ae60;
+      }
+
+      #taskbar-app-list {
+        display: flex;
+        flex-grow: 1;
+        gap: 10px;
+      }
+      .taskbar-app-icon {
+        background-color: rgba(255,255,255,0.1);
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      .taskbar-app-icon:hover {
+        background-color: rgba(255,255,255,0.2);
+      }
+
+      #taskbar-system-tray {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-left: auto;
+      }
+      #taskbar-time, #taskbar-notifications {
+        padding: 5px 10px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+      }
+      #taskbar-notifications:hover {
+        background-color: rgba(255,255,255,0.2);
+        cursor: pointer;
+      }
+
+      .custom-window {
+        background-color: #00000000;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+        z-index: 9990; 
+      }
+      .custom-window .title-bar {
+        padding: 6px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: move;
+        user-select: none;
+        color: #333333; 
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+      }
+      .custom-window iframe {
+        border: none;
+        width: 100%;
+        flex-grow: 1;
+        pointer-events: auto;
+      }
+      .custom-window .controls button {
+        width: 24px;
+        height: 24px;
+        margin-left: 5px;
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        color: #333;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+      }
+      .custom-window .controls button:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
+
+      .custom-window .controls button:nth-child(1):hover { 
+        background-color: rgba(0, 128, 0, 0.2);
+      }
+      .custom-window .controls button:nth-child(2):hover { 
+        background-color: rgba(255, 0, 0, 0.2);
+      }
+
+      .fade-in {
+        animation: fadeIn 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+      }
+      .fade-out {
+        animation: fadeOut 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; transform: scale(1); }
+        to { opacity: 0; transform:scale(0.95); }
+      }
+      .disable-select {
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      .custom-notification, .confirmation-notification {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        width: 320px; 
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        padding: 15px;
+        box-sizing: border-box;
+        z-index: 10000; 
+        opacity: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: right 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+      }
+      .notification-app-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+        color: #777;
+      }
+      .notification-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+        object-fit: cover;
+      }
+      .notification-title {
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+      }
+      .notification-content {
+        font-size: 0.9em;
+        line-height: 1.4;
+        max-height: 80px; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 4; 
+        -webkit-box-orient: vertical;
+        margin-bottom: 10px;
+      }
+      .confirmation-buttons {
+        display: flex;
+        justify-content: space-around;
+        gap: 10px;
+        margin-top: auto;
+      }
+      .confirmation-buttons button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95em;
+        flex: 1;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .confirmation-buttons button:active {
+        transform: scale(0.98);
+      }
+
+      .notification-close-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        font-size: 1.2em;
+        color: #aaa;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        transition: background-color 0.2s, color 0.2s;
+      }
+      .notification-close-button:hover {
+        background-color: rgba(0,0,0,0.05);
+        color: #333;
+      }
+    `;
+    document.head.appendChild(styleTag);
+  }
+}
+
+FroxaOS.WindowManager = class {
+  constructor(froxaOS) {
+    this.froxaOS = froxaOS; 
+    this.windows = {};
+    this.highestZ = 9990;
+    this.focusedWindowName = null;
+    this.initMessageListener();
+  }
+
+  initMessageListener() {
+    window.addEventListener("message", (event) => {
+      let sourceWindowName = null;
+      let sourceIframe = null;
+
+      for (const windowName in this.windows) {
+        const win = this.windows[windowName];
+        const iframe = win.querySelector("iframe");
+        if (iframe && iframe.contentWindow === event.source) {
+          sourceWindowName = windowName;
+          sourceIframe = iframe;
+          break;
+        }
+      }
+
+      if (!sourceWindowName) {
+        return; 
+      }
+
+      const expectedOrigin = sourceIframe.dataset.targetOrigin;
+
+      if (expectedOrigin !== "*" && event.origin !== expectedOrigin) {
+        console.warn(
+          `[FroxaOS WM] Mesaj '${sourceWindowName}' penceresinden engellendi. Beklenen origin '${expectedOrigin}' ama '${event.origin}' alındı.`
+        );
+        return;
+      }
+
+      try {
+        const parsedData = JSON.parse(event.data);
+        console.log(`[FroxaOS WM] ${sourceWindowName} tarafından JSON mesaj alındı:`, parsedData);
+
+        this.froxaOS.emit("messageReceived", {
+          windowName: sourceWindowName,
+          data: parsedData,
+        });
+      } catch (e) {
+        console.log(
+          `[FroxaOS WM] '${sourceWindowName}' penceresinden JSON olmayan mesaj alındı. Ham string olarak işleniyor.`
+        );
+        this.froxaOS.emit("messageReceived", {
+          windowName: sourceWindowName,
+          data: event.data, 
+        });
+      }
+    });
+  }
+
+  focusWindow(name) {
+    if (!this.windows[name]) return;
+    var win = this.windows[name];
+    this.highestZ++;
+    win.style.zIndex = this.highestZ;
+    this.focusedWindowName = name;
+    this.updateIframePointerEvents();
+    this.froxaOS.NotificationManager.updateNotificationZIndex(); 
+  }
+
+  updateIframePointerEvents() {
+    for (var windowName in this.windows) {
+      var win = this.windows[windowName];
+      var iframe = win.querySelector("iframe");
+      if (iframe) {
+
+        iframe.style.pointerEvents =
+          windowName === this.focusedWindowName ? "auto" : "none";
+      }
+    }
+  }
+
+  openWindow(args) {
+    var {
+      NAME: name,
+      URL: url,
+      TITLE_COLOR: titleColor,
+      BAR_COLOR: barColor,
+      WIDTH: width,
+      HEIGHT: height,
+      BG_COLOR: bgColor,
+    } = args;
+
+    if (this.windows[name]) {
+      var win = this.windows[name];
+      this.focusWindow(name);
+      if (win.dataset.minimized === "true") {
+        this.restoreWindow(win);
+        win.classList.add("fade-in");
+        setTimeout(() => win.classList.remove("fade-in"), 300);
+      } else {
+        win.style.display = "flex";
+        win.classList.remove("fade-out");
+        win.classList.add("fade-in");
+        setTimeout(() => win.classList.remove("fade-in"), 300);
+      }
+      return;
+    }
+
+    var win = document.createElement("div");
+    win.className = "custom-window";
+    win.dataset.windowName = name;
+    var screenWidth = window.innerWidth;
+    var screenHeight = window.innerHeight;
+    var startX = (screenWidth - width) / 2;
+    var startY = (screenHeight - height) / 2;
+
+    setStyles(win, {
+      position: "absolute",
+      top: `${startY}px`,
+      left: `${startX}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      backgroundColor: "#00000000", 
+      borderRadius: "12px",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+    });
+    this.focusWindow(name);
+    win.classList.add("fade-in");
+    setTimeout(() => win.classList.remove("fade-in"), 300);
+
+    var titleBar = document.createElement("div");
+    titleBar.className = "title-bar";
+    setStyles(titleBar, {
+      background: barColor,
+      color: titleColor,
+    });
+    titleBar.textContent = name;
+    titleBar.addEventListener("mousedown", () => {
+      this.focusWindow(name);
+    });
+
+    var controls = document.createElement("div");
+    controls.className = "controls";
+    controls.style.display = "flex";
+    controls.appendChild(
+      this.createButton("−", () => this.minimizeWindow(name))
+    );
+    controls.appendChild(
+      this.createButton("×", () => this.closeWindow({ NAME: name }))
+    );
+    titleBar.appendChild(controls);
+    win.appendChild(titleBar);
+
+    var iframe = document.createElement("iframe");
+    iframe.src = url;
+
+    iframe.onload = () => {
+      try {
+        const parsedOrigin = new URL(url).origin;
+        if (parsedOrigin === "null") {
+          iframe.dataset.targetOrigin = "*";
+          console.warn(
+            `[FroxaOS WM] "${url}" için Origin 'null'. postMessage için '*' wildcard hedefi kullanılıyor.`
+          );
+        } else {
+          iframe.dataset.targetOrigin = parsedOrigin;
+        }
+      } catch (e) {
+        console.warn(
+          `[FroxaOS WM] "${url}" URL'si ayrıştırılamadı. postMessage için '*' wildcard hedefi kullanılıyor.`
+        );
+        iframe.dataset.targetOrigin = "*";
+      }
+    };
+    setStyles(iframe, {
+      border: "none",
+      width: "100%",
+      flexGrow: 1,
+      pointerEvents: "auto",
+      backgroundColor: bgColor,
+    });
+
+    win.appendChild(iframe);
+    this.enableDrag(win, titleBar);
+    this.windows[name] = win;
+    this.froxaOS.container.appendChild(win); 
+    win.addEventListener("mousedown", () => {
+      this.focusWindow(name);
+    });
+
+    this.froxaOS.TaskManager.addRunningApp(name); 
+  }
+
+  minimizeWindow(name) {
+    var win = this.windows[name];
+    if (!win || win.dataset.minimized === "true") return;
+
+    if (win.dataset.fullscreen === "true") {
+      win.dataset.wasFullscreenBeforeMinimize = "true";
+    }
+
+    win.dataset.preMinimizeStyles = JSON.stringify({
+      top: win.style.top,
+      left: win.style.left,
+      width: win.style.width,
+      height: win.style.height,
+      transform: win.style.transform || "",
+      display: win.style.display || "flex",
+      fullscreen: win.dataset.fullscreen === "true",
+    });
+
+    win.classList.add("fade-out");
+    win.dataset.minimized = "true";
+    setTimeout(() => {
+      win.style.display = "none";
+      win.classList.remove("fade-out");
+    }, 300);
+    this.froxaOS.TaskManager.updateAppStatus(name, "minimized");
+  }
+
+  restoreWindow(win) {
+    if (win.dataset.minimized !== "true") return;
+    var preMinimizeStyles = JSON.parse(win.dataset.preMinimizeStyles || "{}");
+    win.style.display = preMinimizeStyles.display || "flex";
+    win.style.opacity = "0";
+    win.style.transform = "scale(0.95)";
+
+    setTimeout(() => {
+      win.classList.add("fade-in");
+      setStyles(win, {
+        top: preMinimizeStyles.top,
+        left: preMinimizeStyles.left,
+        width: preMinimizeStyles.width,
+        height: preMinimizeStyles.height,
+        transform: preMinimizeStyles.transform || "scale(1)",
+        opacity: "1",
+      });
+
+      delete win.dataset.minimized;
+      delete win.dataset.preMinimizeStyles;
+
+      if (win.dataset.wasFullscreenBeforeMinimize === "true") {
+
+        delete win.dataset.wasFullscreenBeforeMinimize;
+      }
+      setTimeout(() => {
+        win.classList.remove("fade-in");
+      }, 300);
+    }, 0);
+    this.froxaOS.TaskManager.updateAppStatus(name, "running");
+  }
+
+  enableDrag(win, handle) {
+    let offsetX,
+      offsetY,
+      isDown = false;
+    const self = this;
+
+    handle.addEventListener("mousedown", (e) => {
+      if (win.dataset.fullscreen === "true") return; 
+
+      isDown = true;
+      offsetX = e.clientX - win.offsetLeft;
+      offsetY = e.clientY - win.offsetTop;
+      self.focusWindow(win.dataset.windowName);
+      document.body.classList.add("disable-select");
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isDown) return;
+      isDown = false;
+      document.body.classList.remove("disable-select");
+      self.updateIframePointerEvents();
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const windowWidth = win.offsetWidth;
+      const windowHeight = win.offsetHeight;
+
+      let newLeft = e.clientX - offsetX;
+      let newTop = e.clientY - offsetY;
+
+      newLeft = Math.max(0, newLeft);
+      newTop = Math.max(0, newTop);
+
+      newLeft = Math.min(screenWidth - windowWidth, newLeft);
+      newTop = Math.min(screenHeight - windowHeight, newTop);
+
+      win.style.left = newLeft + "px";
+      win.style.top = newTop + "px";
+
+    });
+  }
+
+  createButton(text, onclick) {
+    var btn = document.createElement("button");
+    btn.textContent = text;
+
+    btn.addEventListener("click", onclick);
+    return btn;
+  }
+
+  closeWindow(args) {
+    var name = args.NAME;
+    var win = this.windows[name];
+    if (win) {
+      win.classList.remove("fade-in");
+      win.classList.add("fade-out");
+      setTimeout(() => {
+        if (win.parentElement) {
+          win.remove();
+        }
+        delete this.windows[name];
+        if (this.focusedWindowName === name) {
+          this.focusedWindowName = null;
+          this.updateIframePointerEvents();
+        }
+        this.froxaOS.TaskManager.removeRunningApp(name); 
+      }, 300);
+    }
+  }
+
+  getOpenWindowNames() {
+    return Object.keys(this.windows);
+  }
+
+  isWindowOpen(args) {
+    var win = this.windows[args.NAME];
+    return !!win;
+  }
+
+  getFocusedWindowName() {
+    return this.focusedWindowName;
+  }
+
+  setIframeFeaturePolicy(args) {
+    var { NAME: windowName, POLICY: policy, VALUE: value } = args;
+    var win = this.windows[windowName];
+    if (!win) return;
+    var iframe = win.querySelector("iframe");
+    if (!iframe) return;
+
+    const policyValue = value === "true" ? "*" : "self"; 
+    const newPolicyDirective = `${policy} ${policyValue}`;
+
+    let currentPolicies = {};
+    const allowAttr = iframe.getAttribute("allow");
+    if (allowAttr) {
+      allowAttr.split(";").forEach((p) => {
+        const parts = p.trim().split(" ");
+        if (parts.length > 0 && parts[0]) {
+          currentPolicies[parts[0]] = parts.slice(1).join(" ");
+        }
+      });
+    }
+
+    currentPolicies[policy] = policyValue;
+
+    const newAllowString = Object.entries(currentPolicies)
+      .map(([key, val]) => `${key} ${val}`)
+      .join("; ");
+
+    iframe.setAttribute("allow", newAllowString);
+  }
+
+  setIframeSandbox(args) {
+    const { NAME: windowName, PERMISSION: permission, STATE: state } = args;
+    const win = this.windows[windowName];
+    if (!win) {
+      console.warn(`Pencere "${windowName}" bulunamadı.`);
+      return;
+    }
+
+    const iframe = win.querySelector("iframe");
+    if (!iframe) {
+      console.warn(`"${windowName}" penceresinde Iframe bulunamadı.`);
+      return;
+    }
+
+    const currentSandbox = iframe.getAttribute("sandbox") || "";
+    const permissions = new Set(currentSandbox.split(" ").filter((p) => p));
+
+    if (state === "true") {
+      permissions.add(permission);
+    } else {
+      permissions.delete(permission);
+    }
+
+    const newSandboxValue = [...permissions].join(" ");
+
+    if (newSandboxValue) {
+      iframe.setAttribute("sandbox", newSandboxValue);
+    } else {
+      iframe.removeAttribute("sandbox");
+    }
+  }
+
+  sendMessageToWindow(args) {
+    const { NAME: windowName, MESSAGE: message } = args;
+    const win = this.windows[windowName];
+
+    if (!win) {
+      console.warn(
+        `[FroxaOS WM] Mesaj gönderilemedi: Pencere "${windowName}" bulunamadı.`
+      );
+      return;
+    }
+
+    const iframe = win.querySelector("iframe");
+    const targetOrigin = iframe.dataset.targetOrigin;
+
+    if (iframe && targetOrigin) {
+      iframe.contentWindow.postMessage(message, targetOrigin);
+    } else {
+      console.warn(
+        `[FroxaOS WM] Mesaj gönderilemedi: "${windowName}" penceresi için Iframe veya hedef origin eksik.`
+      );
+    }
+  }
+
+};
+
+FroxaOS.NotificationManager = class {
+  constructor(froxaOS) {
+    this.froxaOS = froxaOS;
+    this.notificationQueue = [];
+    this.confirmationNotificationQueue = [];
+    this.isNotificationRunning = false;
+    this.isConfirmationNotificationRunning = false;
+    this.notificationZIndex = 10000;
+    this.notificationStates = {};
+  }
+
+  updateNotificationZIndex() {
+
+    var notifications = document.querySelectorAll(".custom-notification, .confirmation-notification");
+    notifications.forEach((notification) => {
+      notification.style.zIndex = this.notificationZIndex;
+    });
+  }
+
+  showNotification(args) {
+    this.notificationQueue.push({ type: "normal", args });
+    this.processNotificationQueue();
+  }
+
+  showConfirmationNotification(args) {
+    this.confirmationNotificationQueue.push({ type: "confirmation", args });
+    this.processNotificationQueue();
+  }
+
+  processNotificationQueue() {
+    if (this.isNotificationRunning || this.isConfirmationNotificationRunning)
+      return;
+
+    if (
+      this.confirmationNotificationQueue.length === 0 &&
+      this.notificationQueue.length === 0
+    ) {
+      return;
+    }
+
+    var nextNotification;
+    if (this.confirmationNotificationQueue.length > 0) {
+      nextNotification = this.confirmationNotificationQueue.shift();
+    } else if (this.notificationQueue.length > 0) {
+      nextNotification = this.notificationQueue.shift();
+    } else {
+      return;
+    }
+
+    if (nextNotification.type === "normal") {
+      this.isNotificationRunning = true;
+      var args = nextNotification.args;
+      this.createNotification(args);
+    } else if (nextNotification.type === "confirmation") {
+      this.isConfirmationNotificationRunning = true;
+      var args = nextNotification.args;
+      this.createConfirmationNotification(args);
+    }
+  }
+
+  createNotification(args) {
+    var {
+      ICON_URL: iconURL,
+      APP_NAME: appName,
+      TITLE: title,
+      CONTENT: content,
+      BG_COLOR: bgColor,
+      TITLE_COLOR: titleColor,
+      CONTENT_COLOR: contentColor,
+      APP_COLOR: appColor,
+      ICON_RADIUS: iconRadius,
+      TIMEOUT: timeout,
+    } = args;
+
+    var notification = document.createElement("div");
+    notification.className = "custom-notification";
+    setStyles(notification, { backgroundColor: bgColor });
+
+    var appInfo = document.createElement("div");
+    appInfo.className = "notification-app-info";
+    var icon = document.createElement("img");
+    icon.src = iconURL;
+    icon.className = "notification-icon";
+    setStyles(icon, { borderRadius: `${iconRadius}px` });
+    appInfo.appendChild(icon);
+    var appNameSpan = document.createElement("span");
+    appNameSpan.textContent = appName;
+    setStyles(appNameSpan, { color: appColor });
+    appInfo.appendChild(appNameSpan);
+    notification.appendChild(appInfo);
+
+    var titleElement = document.createElement("div");
+    titleElement.className = "notification-title";
+    titleElement.textContent = title;
+    setStyles(titleElement, { color: titleColor });
+    notification.appendChild(titleElement);
+
+    var contentElement = document.createElement("div");
+    contentElement.className = "notification-content";
+    contentElement.textContent = content;
+    setStyles(contentElement, { color: contentColor });
+    notification.appendChild(contentElement);
+
+    var closeButton = this.createNotificationButton("×", () => {
+      this.closeNotification(notification);
+    });
+    closeButton.className = "notification-close-button";
+    notification.appendChild(closeButton);
+
+    document.body.appendChild(notification); 
+
+    setTimeout(() => {
+      notification.style.right = `10px`;
+      notification.style.opacity = 1;
+    }, 50);
+
+    var timeoutMs = timeout * 1000;
+    this.notificationTimeout = setTimeout(() => {
+      this.closeNotification(notification);
+    }, timeoutMs);
+  }
+
+  createConfirmationNotification(args) {
+    var {
+      ID: id,
+      ICON_URL: iconURL,
+      APP_NAME: appName,
+      TITLE: title,
+      CONTENT: content,
+      BG_COLOR: bgColor,
+      TITLE_COLOR: titleColor,
+      CONTENT_COLOR: contentColor,
+      APP_COLOR: appColor,
+      ICON_RADIUS: iconRadius,
+      CONFIRM_TEXT: confirmText,
+      CANCEL_TEXT: cancelText,
+      CONFIRM_COLOR: confirmColor,
+      CANCEL_COLOR: cancelColor,
+    } = args;
+
+    if (this.notificationStates[id]) {
+      var existingNotification = document.querySelector(
+        `.confirmation-notification[data-notification-id="${id}"]`
+      );
+      if (existingNotification) {
+        this.closeConfirmationNotification(existingNotification, id, "closed");
+      }
+    }
+
+    this.notificationStates[id] = "pending";
+
+    var notification = document.createElement("div");
+    notification.className = "confirmation-notification";
+    notification.dataset.notificationId = id;
+    setStyles(notification, { backgroundColor: bgColor });
+
+    var appInfo = document.createElement("div");
+    appInfo.className = "notification-app-info";
+    var icon = document.createElement("img");
+    icon.src = iconURL;
+    icon.className = "notification-icon";
+    setStyles(icon, { borderRadius: `${iconRadius}px` });
+    appInfo.appendChild(icon);
+    var appNameSpan = document.createElement("span");
+    appNameSpan.textContent = appName;
+    setStyles(appNameSpan, { color: appColor });
+    appInfo.appendChild(appNameSpan);
+    notification.appendChild(appInfo);
+
+    var titleElement = document.createElement("div");
+    titleElement.className = "notification-title";
+    titleElement.textContent = title;
+    setStyles(titleElement, { color: titleColor });
+    notification.appendChild(titleElement);
+
+    var contentElement = document.createElement("div");
+    contentElement.className = "notification-content";
+    contentElement.textContent = content;
+    setStyles(contentElement, { color: contentColor });
+    notification.appendChild(contentElement);
+
+    var closeButton = this.createNotificationButton("×", () => {
+      this.closeConfirmationNotification(notification, id, "closed");
+    });
+    closeButton.className = "notification-close-button";
+    notification.appendChild(closeButton);
+
+    var confirmationButtons = document.createElement("div");
+    confirmationButtons.className = "confirmation-buttons";
+
+    var confirmButton = document.createElement("button");
+    confirmButton.textContent = confirmText;
+    confirmButton.className = "notification-confirm-button";
+    setStyles(confirmButton, {
+      backgroundColor: confirmColor,
+      color: "white",
+    });
+    confirmButton.addEventListener("click", () => {
+      this.closeConfirmationNotification(notification, id, "true");
+    });
+
+    var cancelButton = document.createElement("button");
+    cancelButton.textContent = cancelText;
+    cancelButton.className = "notification-cancel-button";
+    setStyles(cancelButton, {
+      backgroundColor: cancelColor,
+      color: "white",
+    });
+    cancelButton.addEventListener("click", () => {
+      this.closeConfirmationNotification(notification, id, "canceled");
+    });
+
+    confirmationButtons.appendChild(confirmButton);
+    confirmationButtons.appendChild(cancelButton);
+    notification.appendChild(confirmationButtons);
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.right = `10px`;
+      notification.style.opacity = 1;
+    }, 50);
+
+    this.isConfirmationNotificationRunning = true;
+  }
+
+  createNotificationButton(text, onclick) {
+    var btn = document.createElement("button");
+    btn.textContent = text;
+    btn.addEventListener("click", onclick);
+    return btn;
+  }
+
+  closeNotification(notification) {
+    notification.style.right = `-${notification.offsetWidth}px`;
+    notification.style.opacity = 0;
+
+    clearTimeout(this.notificationTimeout);
+
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+      this.isNotificationRunning = false;
+      this.processNotificationQueue();
+    }, 300);
+  }
+
+  closeConfirmationNotification(notification, id, state) {
+    notification.style.right = `-${notification.offsetWidth}px`;
+    notification.style.opacity = 0;
+
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+      this.notificationStates[id] = state;
+      this.isConfirmationNotificationRunning = false;
+      this.processNotificationQueue();
+
+      this.froxaOS.emit("notificationResponse", {
+        notificationId: id,
+        result: state,
+      });
+
+      for (const windowName in this.froxaOS.WindowManager.windows) {
+        const win = this.froxaOS.WindowManager.windows[windowName];
+        const iframe = win.querySelector("iframe");
+        if (iframe && iframe.contentWindow) {
+            const targetOrigin = iframe.dataset.targetOrigin || '*'; 
+            iframe.contentWindow.postMessage({
+                type: "notification-response",
+                notificationId: id,
+                result: state,
+            }, targetOrigin);
+        }
+      }
+
+    }, 300);
+  }
+
+  getNotificationState(args) {
+    var id = args.ID;
+    return this.notificationStates[id] || "";
+  }
+};
+
+FroxaOS.AccountManager = class {
+  constructor(froxaOS) {
+    this.froxaOS = froxaOS;
+    this.currentUser = null; 
+    this.sessionData = {}; 
+  }
+
+  async loadSession() {
+
+    this.sessionData = this.froxaOS.userData;
+    console.log("Oturum verileri yüklendi:", this.sessionData);
+
+  }
+
+  async secureLogout(password) {
+    if (!password) {
+      console.warn("Parola olmadan güvenli çıkış yapılamaz.");
+      return false;
+    }
+
+    await window.secureLogout(password);
+    return true;
+  }
+
+  getUserSessionData() {
+
+    return {
+      theme: this.froxaOS.UIManager.currentTheme,
+      background: this.froxaOS.UIManager.currentBackground,
+
+    };
+  }
+};
+
+FroxaOS.UIManager = class {
+  constructor(froxaOS) {
+    this.froxaOS = froxaOS;
+    this.desktopBackgroundElement = null;
+    this.taskbarElement = null;
+    this.currentTheme = "default"; 
+    this.currentBackground = "default_background.jpg"; 
+  }
+
+  setupDesktop() {
+    this.desktopBackgroundElement = document.createElement("div");
+    this.desktopBackgroundElement.id = "desktop-background";
+    this.froxaOS.container.appendChild(this.desktopBackgroundElement);
+  }
+
+  setupTaskbar() {
+    this.taskbarElement = document.createElement("div");
+    this.taskbarElement.id = "taskbar";
+
+    const startButton = document.createElement("button");
+    startButton.id = "taskbar-start-button";
+    startButton.textContent = "Start";
+    startButton.onclick = () => alert("Start Menüsü yakında!"); 
+    this.taskbarElement.appendChild(startButton);
+
+    const appList = document.createElement("div");
+    appList.id = "taskbar-app-list";
+    this.taskbarElement.appendChild(appList); 
+
+    const systemTray = document.createElement("div");
+    systemTray.id = "taskbar-system-tray";
+
+    const timeElement = document.createElement("span");
+    timeElement.id = "taskbar-time";
+    systemTray.appendChild(timeElement);
+
+    const notificationsIcon = document.createElement("span");
+    notificationsIcon.id = "taskbar-notifications";
+    notificationsIcon.textContent = "🔔"; 
+    notificationsIcon.onclick = () => alert("Bildirimler penceresi!");
+    systemTray.appendChild(notificationsIcon);
+
+    const logoutButton = document.createElement("button");
+    logoutButton.textContent = "🔒 Güvenli Çıkış";
+    setStyles(logoutButton, {
+        background: '#e74c3c',
+        color: 'white',
+        border: 'none',
+        padding: '5px 10px',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '0.9em',
+        marginLeft: '10px'
+    });
+    logoutButton.onclick = async () => {
+        const password = prompt("Güvenli çıkış için parolanızı girin:");
+        if (password) {
+            const success = await this.froxaOS.AccountManager.secureLogout(password);
+            if (success) {
+
+            } else {
+                alert("Güvenli çıkış başarısız oldu.");
+            }
+        } else {
+            alert("Parola girmeden güvenli çıkış yapılamaz.");
+        }
+    };
+    systemTray.appendChild(logoutButton);
+
+    this.taskbarElement.appendChild(systemTray);
+    this.froxaOS.container.appendChild(this.taskbarElement);
+  }
+
+  renderBackground() {
+
+    this.desktopBackgroundElement.style.backgroundImage = `url(https:
+  }
+
+  setBackground(imageURL) {
+    this.currentBackground = imageURL;
+    this.renderBackground();
+
+    this.froxaOS.AccountManager.sessionData.background = imageURL;
+  }
+
+  setTheme(themeName) {
+    this.currentTheme = themeName;
+
+    this.froxaOS.AccountManager.sessionData.theme = themeName;
+  }
+};
+
+FroxaOS.TaskManager = class {
+  constructor(froxaOS) {
+    this.froxaOS = froxaOS;
+    this.runningApps = {}; 
+    this.appListElement = document.getElementById("taskbar-app-list");
+    this.timeElement = document.getElementById("taskbar-time");
+  }
+
+  startClock() {
+    setInterval(() => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      this.timeElement.textContent = timeString;
+    }, 1000);
+  }
+
+  addRunningApp(name) {
+    if (this.runningApps[name]) {
+      this.updateAppStatus(name, "running");
+      return;
+    }
+
+    const appIcon = document.createElement("div");
+    appIcon.className = "taskbar-app-icon";
+    appIcon.textContent = name;
+    appIcon.onclick = () => {
+      this.froxaOS.WindowManager.focusWindow(name);
+      const win = this.froxaOS.WindowManager.windows[name];
+      if (win && win.dataset.minimized === "true") {
+        this.froxaOS.WindowManager.restoreWindow(win);
+      } else if (win) {
+        win.style.display = "flex"; 
+      }
+    };
+    this.appListElement.appendChild(appIcon);
+    this.runningApps[name] = { element: appIcon, status: "running" };
+    this.updateAppStatus(name, "running"); 
+  }
+
+  removeRunningApp(name) {
+    if (this.runningApps[name]) {
+      this.runningApps[name].element.remove();
+      delete this.runningApps[name];
+    }
+  }
+
+  updateAppStatus(name, status) {
+    if (this.runningApps[name]) {
+      this.runningApps[name].status = status;
+      if (status === "minimized") {
+        this.runningApps[name].element.style.opacity = 0.5; 
+      } else {
+        this.runningApps[name].element.style.opacity = 1; 
+      }
+    }
+  }
+
+  getRunningApps() {
+    return Object.keys(this.runningApps).map(appName => ({
+      name: appName,
+      status: this.runningApps[appName].status
+    }));
+  }
+};
+
+Object.assign(FroxaOS.prototype, {
+  _events: {},
+  on(event, listener) {
+    if (typeof this._events[event] !== 'object') {
+      this._events[event] = [];
+    }
+    this._events[event].push(listener);
+    return () => this.off(event, listener);
+  },
+  off(event, listener) {
+    if (typeof this._events[event] === 'object') {
+      const idx = this._events[event].indexOf(listener);
+      if (idx > -1) {
+        this._events[event].splice(idx, 1);
+      }
+    }
+  },
+  emit(event, ...args) {
+    if (typeof this._events[event] === 'object') {
+      this._events[event].forEach(listener => listener.apply(this, args));
+    }
+  }
+});
+
+window.FroxaOS = {
+
+  init: (container, bootOptions) => {
+    window._froxaOSInstance = new FroxaOS(container, bootOptions);
+    window._froxaOSInstance.init();
+
+    FroxaOS.WindowManager = window._froxaOSInstance.WindowManager;
+    FroxaOS.NotificationManager = window._froxaOSInstance.NotificationManager;
+    FroxaOS.AccountManager = window._froxaOSInstance.AccountManager;
+    FroxaOS.UIManager = window._froxaOSInstance.UIManager;
+    FroxaOS.TaskManager = window._froxaOSInstance.TaskManager;
+
+    document.addEventListener("mousedown", (event) => {
+      let isClickInsideWindow = false;
+      if (!window._froxaOSInstance || !window._froxaOSInstance.WindowManager || !window._froxaOSInstance.WindowManager.windows) return;
+      for (var windowName in window._froxaOSInstance.WindowManager.windows) {
+        var win = window._froxaOSInstance.WindowManager.windows[windowName];
+        if (win.contains(event.target)) {
+          isClickInsideWindow = true;
+          break;
+        }
+      }
+
+      if (!isClickInsideWindow) {
+        if (window._froxaOSInstance.WindowManager.focusedWindowName) {
+          window._froxaOSInstance.WindowManager.focusedWindowName = null;
+          window._froxaOSInstance.WindowManager.updateIframePointerEvents();
+        }
+      }
+    });
+
+  }
+
+};
